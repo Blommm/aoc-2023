@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	// log.Printf("(Part 1) Total: %d", part1(file))
+	log.Printf("(Part 1) Total: %d", part1(file))
 	log.Printf("(Part 2) Total: %d", part2(file))
 }
 
