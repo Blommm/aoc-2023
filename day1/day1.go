@@ -10,12 +10,13 @@ import (
 )
 
 func main() {
-	file, err := os.Open("C:\\Dev\\adventofcode-2023\\day1\\input2.txt")
+	file, err := os.Open("./input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	log.Printf("(Part 1) Total: %d", part1(file))
+
+	//log.Printf("(Part 1) Total: %d", part1(file))
 	log.Printf("(Part 2) Total: %d", part2(file))
 }
 
@@ -40,7 +41,6 @@ func part2(file *os.File) int {
 	for scanner.Scan() {
 		cleanedString := convertNumberWordsToNumbers(scanner.Text())
 		sum += extractNumbers(cleanedString)
-		log.Printf("%s (%s) = %d", cleanedString, scanner.Text(), extractNumbers(cleanedString))
 	}
 
 	return sum
@@ -66,16 +66,49 @@ func extractNumbers(line string) int {
 }
 
 func convertNumberWordsToNumbers(line string) string {
-	replacer := strings.NewReplacer(
-		"one", "1",
-		"two", "2",
-		"three", "3",
-		"four", "4",
-		"five", "5",
-		"six", "6",
-		"seven", "7",
-		"eight", "8",
-		"nine", "9")
+    words := map[string]int {
+        "one": 1,
+        "two": 2,
+        "three": 3,
+        "four": 4,
+        "five": 5,
+        "six": 6,
+        "seven": 7,
+        "eight": 8,
+        "nine": 9,
+    }
 
-	return replacer.Replace(line)
+    indexedMap := map[string]int {
+        "one": 0,
+        "two": 0,
+        "three": 0,
+        "four": 0,
+        "five": 0,
+        "six": 0,
+        "seven": 0,
+        "eight": 0,
+        "nine": 0,
+    }
+
+rerun:
+    for word, value := range words {
+        idx := strings.Index(line, word)
+
+        log.Printf("%d (%d)", idx, value)
+        
+        if idx != -1 {
+            if (idx+1 > len(line)) {
+                line = line[:idx] + strconv.Itoa(value) + line[idx:]
+            } else {
+                line = line[:idx+1] + strconv.Itoa(value) + line[idx+1:];
+            }
+        }
+
+        indexedMap[word] = idx;
+
+        if (indexedMap[word] != -1) {
+            goto rerun;      
+        }
+    }
+    return line;
 }
