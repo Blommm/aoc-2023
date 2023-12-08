@@ -10,20 +10,21 @@ import (
 )
 
 var Seeds []int
-var SeedRanges []string
+var SeedRanges map[int]int = make(map[int]int)
 
 type MapTo struct{
+    Start int
     DestinationStart int
     Range int
 }
 
-var SeedToSoil map[string]MapTo = make(map[string]MapTo)
-var SoilToFertilizer map[string]MapTo = make(map[string]MapTo)
-var FertilizerToWater map[string]MapTo = make(map[string]MapTo)
-var WaterToLight map[string]MapTo = make(map[string]MapTo)
-var LightToTemperature map[string]MapTo = make(map[string]MapTo)
-var TemperatureToHumidity map[string]MapTo = make(map[string]MapTo)
-var HumidityToLocation map[string]MapTo = make(map[string]MapTo)
+var SeedToSoil []MapTo
+var SoilToFertilizer []MapTo
+var FertilizerToWater []MapTo
+var WaterToLight []MapTo
+var LightToTemperature []MapTo
+var TemperatureToHumidity []MapTo
+var HumidityToLocation []MapTo
 
 func main() {
     content, err := ioutil.ReadFile("./input")
@@ -32,7 +33,6 @@ func main() {
     }
 
     // part1 := p1(string(content))
-    // Should work just takes a year
     part2 := p2(string(content))
     log.Println(part2)
 
@@ -75,14 +75,9 @@ func p2(content string) int {
 
     var Locations []int
 
-    log.Println(SeedRanges)
-    for _, seedRange := range SeedRanges {
-        start, rangeLen := 0, 0
-
-        fmt.Sscanf(seedRange, "%d-%d", &start, &rangeLen)
-        end := start+rangeLen
-        log.Printf("Next range (%d - %d)", start, end)
-
+    for start, end := range SeedRanges {
+        log.Println("new range")
+        lowestLocation := -1
         for i := start; i < end; i++ {
             soil := checkRange(SeedToSoil, i)
             fertilizer := checkRange(SoilToFertilizer, soil)
@@ -91,23 +86,23 @@ func p2(content string) int {
             temperature := checkRange(LightToTemperature, light)
             humidity := checkRange(TemperatureToHumidity, temperature)
             location := checkRange(HumidityToLocation, humidity)
-
-            Locations = append(Locations, location)
+            
+            if (location < lowestLocation || lowestLocation == -1) {
+                lowestLocation = location
+            }
         }
+        Locations = append(Locations, lowestLocation)
     }
 
     sort.Ints(Locations)
-    log.Println(Locations)
     return Locations[0]
 }
 
-func checkRange(mapToCheck map[string]MapTo, checkValue int) int {
+func checkRange(mapToCheck []MapTo, checkValue int) int {
     ret := -1
-    for inRange, Dest := range mapToCheck {
-        start, end := 0, 0;
-        fmt.Sscanf(inRange, "%d-%d", &start, &end)
-        if (start <= checkValue && end > checkValue) {
-            ret = Dest.DestinationStart + (checkValue - start);   
+    for _, d := range mapToCheck {
+        if (d.Start <= checkValue && d.Start + d.Range > checkValue) {
+            ret = d.DestinationStart + (checkValue - d.Start);   
         }
     }
     if (ret == -1) {
@@ -115,6 +110,7 @@ func checkRange(mapToCheck map[string]MapTo, checkValue int) int {
     }
     return ret;
 }
+
 func parseSeedRange(fileContent string) {
     seedList := strings.Split(fileContent, "\n")[0]
     seedArray := strings.Split(seedList[7:], " ");
@@ -124,13 +120,15 @@ func parseSeedRange(fileContent string) {
             continue;
         }
 
-        seedStart, seedEnd := 0, 0
+        seedStart, seedRange := 0, 0
 
         fmt.Sscanf(s, "%d", &seedStart)
-        fmt.Sscanf(seedArray[i+1], "%d", &seedEnd)
-
-        SeedRanges = append(SeedRanges, fmt.Sprintf("%d-%d", seedStart, seedEnd));
+        fmt.Sscanf(seedArray[i+1], "%d", &seedRange)
+        
+        SeedRanges[seedStart] = seedStart+seedRange
     }
+
+    log.Println(SeedRanges)
 
 }
 
@@ -167,52 +165,58 @@ func parseMaps(fileContent string) {
         switch(currentParse) {
             case "seed-to-soil":
                 log.Println("seed-to-soil ", rangeStart, sourceRangeStart, rangeLength)
-                SeedToSoil[fmt.Sprintf("%d-%d", sourceRangeStart, sourceRangeStart + rangeLength)] = MapTo{
+                SeedToSoil = append(SeedToSoil, MapTo{
+                    Start: sourceRangeStart,
                     DestinationStart: rangeStart,
                     Range: rangeLength,
-                }
+                })
                 break;
             case "soil-to-fertilizer":
                 log.Println("soil-to-fertilizer ", rangeStart, sourceRangeStart, rangeLength)
-                SoilToFertilizer[fmt.Sprintf("%d-%d", sourceRangeStart, sourceRangeStart + rangeLength)] = MapTo{
+                SoilToFertilizer = append(SoilToFertilizer, MapTo{
+                    Start: sourceRangeStart,
                     DestinationStart: rangeStart,
                     Range: rangeLength,
-                }
-                break;
+                })
             case "fertilizer-to-water":
                 log.Println("fertilizer-to-water ", rangeStart, sourceRangeStart, rangeLength)
-                FertilizerToWater[fmt.Sprintf("%d-%d", sourceRangeStart, sourceRangeStart + rangeLength)] = MapTo{
+                FertilizerToWater = append(FertilizerToWater, MapTo{
+                    Start: sourceRangeStart,
                     DestinationStart: rangeStart,
                     Range: rangeLength,
-                }
+                })
                 break;
             case "water-to-light":
                 log.Println("water-to-light ", rangeStart, sourceRangeStart, rangeLength)
-                WaterToLight[fmt.Sprintf("%d-%d", sourceRangeStart, sourceRangeStart + rangeLength)] = MapTo{
+                WaterToLight= append(WaterToLight, MapTo{
+                    Start: sourceRangeStart,
                     DestinationStart: rangeStart,
                     Range: rangeLength,
-                }
+                })
                 break;
             case "light-to-temperature":
                 log.Println("light-to-temperature ", rangeStart, sourceRangeStart, rangeLength)
-                LightToTemperature[fmt.Sprintf("%d-%d", sourceRangeStart, sourceRangeStart + rangeLength)] = MapTo{
+                LightToTemperature = append(LightToTemperature, MapTo{
+                    Start: sourceRangeStart,
                     DestinationStart: rangeStart,
                     Range: rangeLength,
-                }
+                })
                 break;
             case "temperature-to-humidity":
                 log.Println("temperature-to-humidity ", rangeStart, sourceRangeStart, rangeLength)
-                TemperatureToHumidity[fmt.Sprintf("%d-%d", sourceRangeStart, sourceRangeStart + rangeLength)] = MapTo{
+                TemperatureToHumidity = append(TemperatureToHumidity, MapTo{
+                    Start: sourceRangeStart,
                     DestinationStart: rangeStart,
                     Range: rangeLength,
-                }
+                })
                 break;
             case "humidity-to-location":
                 log.Println("humidity-to-location ", rangeStart, sourceRangeStart, rangeLength)
-                HumidityToLocation[fmt.Sprintf("%d-%d", sourceRangeStart, sourceRangeStart + rangeLength)] = MapTo{
+                HumidityToLocation = append(HumidityToLocation, MapTo{
+                    Start: sourceRangeStart,
                     DestinationStart: rangeStart,
                     Range: rangeLength,
-                }
+                })
                 break;
             default: {
                 log.Println("Default")
